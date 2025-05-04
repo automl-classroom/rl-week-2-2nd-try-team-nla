@@ -93,4 +93,23 @@ class PartialObsWrapper(gym.Wrapper):
     metadata = {"render_modes": ["human"]}
 
     def __init__(self, env: gym.Env, noise: float = 0.1, seed: int | None = None):
-        pass
+        super().__init__(env)
+        assert 0.0 <= noise <= 1.0, "noise must be in [0, 1]"
+        self.noise = noise
+        self.rng = np.random.default_rng(seed)
+        self.observation_space = env.observation_space
+        self.action_space = env.action_space
+
+    def reset(self, *, seed: int):
+        true_obs, info = self.env.reset(seed=seed), {}
+        return self._noisy_obs(true_obs), info
+
+    def step(self, action: int):
+        true_obs, reward, terminated, truncated, info = self.env.step(action)
+        return self._noisy_obs(true_obs), reward, terminated, truncated, info
+
+    def _noisy_obs(self, true_obs: int) -> int:
+        if self.rng.random() < self.noise:
+            # Since only 2 states (0 and 1), just flip the value
+            return 1 - true_obs
+        return true_obs
