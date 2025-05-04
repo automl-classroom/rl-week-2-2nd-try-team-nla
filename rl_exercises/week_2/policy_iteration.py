@@ -52,16 +52,17 @@ class PolicyIteration(AbstractAgent):
         self.n_actions = self.env.action_space.n  # type: ignore[attr-defined]
 
         # TODO: Get the MDP components (states, actions, transitions, rewards)
-        self.S = None
-        self.A = None
-        self.T = None
-        self.R = None
+        self.S = self.env.states
+        self.A = self.env.actions
+        self.T = self.env.transition_matrix 
+        self.R = self.env.rewards
         self.gamma = gamma
         self.R_sa = None
 
         # TODO: Initialize policy and Q-values
-        self.pi = None
-        self.Q = None
+        self.pi = np.random.choice(self.A, size=len(self.S))
+        self.Q = np.zeros((len(self.S), len(self.A)))
+
 
         self.policy_fitted: bool = False
         self.steps: int = 0
@@ -86,15 +87,19 @@ class PolicyIteration(AbstractAgent):
         tuple[int, dict]
             The selected action and an empty info dictionary.
         """
-        # TODO: Return the action according to current policy
-        raise NotImplementedError("predict_action() is not implemented.")
+
+        return self.pi[observation], {}
 
     def update_agent(self, *args: tuple, **kwargs: dict) -> None:
         """Run policy iteration to compute the optimal policy and state-action values."""
         if not self.policy_fitted:
-            # TODO: Call policy iteration with initialized values
-            raise NotImplementedError("update_agent() is not implemented.")
+
+            MDP = (self.S, self.A, self.T, self.R_sa, self.gamma)
+            Q, pi, num_steps = policy_iteration(self.Q, self.pi, MDP)
             self.policy_fitted = True
+
+            print(f"Updated Agents policy in {num_steps} steps")
+
 
     def save(self, *args: tuple[Any], **kwargs: dict) -> None:
         """
@@ -152,12 +157,21 @@ def policy_evaluation(
     np.ndarray
         The evaluated value function V[s] for all states.
     """
+
     nS = R_sa.shape[0]
-    V = np.zeros(nS)
+    
+    V_prev = np.zeros(nS)
+    V_new = np.ones(nS)
 
-    # TODO: imüplement Poolicy Evaluation for all states
+    while np.linalg.norm(V_new - V_prev, ord=1) > epsilon:
 
-    return V
+        for s in range(nS): 
+            a = pi[s]      
+            v = np.sum(T[s, a] * V_prev)
+            r = R_sa[s, a]
+            V_new[s] = r + gamma * v   
+
+    return V_new
 
 
 def policy_improvement(
@@ -187,9 +201,12 @@ def policy_improvement(
     """
     nS, nA = R_sa.shape
     Q = np.zeros((nS, nA))
-    pi_new = None
-    # TODO: imüplement Poolicy Evaluation for all states
+    
+    for s in range(nS):
+        for a in range(nA):
+            Q[s, a] = R_sa[s, a] + gamma * np.sum(T[s, a] * V)
 
+    pi_new = np.argmax(Q, axis=1)
     return Q, pi_new
 
 
@@ -221,6 +238,23 @@ def policy_iteration(
     S, A, T, R_sa, gamma = MDP
 
     # TODO: Combine evaluation and improvement in a loop.
+
+    i = 0
+    pi_prev = pi
+
+    while True:
+    
+        V = policy_evaluation(pi_prev, T, R_sa, gamma, epsilon)
+        Q, pi_new = policy_improvement(V, T, R_sa, gamma)
+
+        i += 1
+
+        if np.linalg.norm(pi_new - pi_prev, ord=1) < 0: 
+            break
+
+        pi_prev = pi_new 
+
+    return Q, pi_new, i
 
 
 if __name__ == "__main__":
