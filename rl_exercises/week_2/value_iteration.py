@@ -50,7 +50,7 @@ class ValueIteration(AbstractAgent):
         self.S = self.env.states
         self.A = self.env.actions
         self.T = self.env.transition_matrix 
-        self.R_sa = None
+        self.R_sa = self.env.get_reward_per_action()
         self.n_states = self.env.observation_space.n
         self.n_actions = self.env.action_space.n 
 
@@ -122,7 +122,7 @@ def value_iteration(
     """
     n_states, n_actions = R_sa.shape
     V_prev = np.zeros(n_states, dtype=float)
-    V_new = np.ones(n_states, dtype=float)
+    V_new = np.zeros(n_states, dtype=float)
 
     rng = np.random.default_rng(seed) 
 
@@ -138,7 +138,7 @@ def value_iteration(
 
             V_new[s] = np.max(Q)
 
-        if np.linalg.norm(V_new - V_prev, ord=1) < epsilon:
+        if np.max(np.abs(V_new - V_prev)) < epsilon:
             break
 
         V_prev = V_new
@@ -152,7 +152,8 @@ def value_iteration(
         for a in range(n_actions):
             Q[a] = R_sa[s, a] + gamma * np.sum(T[s, a] * V_new)
 
-        best = np.flatnonzero(np.isclose(Q, np.max(Q))
+        best = np.flatnonzero(np.isclose(Q, np.max(Q)))
         pi[s] = rng.choice(best)
 
     return V_new, pi
+
