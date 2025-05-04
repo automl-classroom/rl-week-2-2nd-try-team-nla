@@ -52,7 +52,7 @@ class ValueIteration(AbstractAgent):
         self.T = self.env.transition_matrix 
         self.R_sa = self.env.get_reward_per_action()
         self.n_states = self.env.observation_space.n
-        self.n_actions = self.env.action_space.n 
+        self.n_actions = self.env.action_space.n
 
         # placeholders
         self.V = np.zeros(self.n_states, dtype=float)
@@ -84,6 +84,7 @@ class ValueIteration(AbstractAgent):
         # TODO: Return action from learned policy
 
         return self.pi[observation], {}
+
 
 def value_iteration(
     *,
@@ -124,14 +125,12 @@ def value_iteration(
     V_prev = np.zeros(n_states, dtype=float)
     V_new = np.zeros(n_states, dtype=float)
 
-    rng = np.random.default_rng(seed) 
+    rng = np.random.default_rng(seed)
 
     i = 1
 
     while True:
-
-        for s in range(n_states): 
-
+        for s in range(n_states):
             Q = np.zeros(n_actions)
             for a in range(n_actions):
                 Q[a] = R_sa[s, a] + gamma * np.sum(T[s, a] * V_prev)
@@ -142,12 +141,11 @@ def value_iteration(
             break
 
         V_prev = V_new
-        i += 1  
+        i += 1
 
     pi = np.zeros(n_states, dtype=int)
 
     for s in range(n_states):
-
         Q = np.zeros(n_actions)
         for a in range(n_actions):
             Q[a] = R_sa[s, a] + gamma * np.sum(T[s, a] * V_new)

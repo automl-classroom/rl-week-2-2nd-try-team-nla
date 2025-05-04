@@ -61,7 +61,6 @@ class PolicyIteration(AbstractAgent):
 
         # TODO: Initialize policy and Q-values
         self.pi = np.zeros(len(self.S), dtype=int)
-        #np.random.choice(self.A, size=len(self.S))
         self.Q = np.zeros((len(self.S), len(self.A)))
 
         self.policy_fitted: bool = False
