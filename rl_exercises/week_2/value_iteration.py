@@ -47,12 +47,12 @@ class ValueIteration(AbstractAgent):
         self.seed = seed
 
         # TODO: Extract MDP components from the environment
-        self.S = None
-        self.A = None
-        self.T = None
-        self.R_sa = None
-        self.n_states = None
-        self.n_actions = None
+        self.S = self.env.states
+        self.A = self.env.actions
+        self.T = self.env.transition_matrix 
+        self.R_sa = self.env.get_reward_per_action()
+        self.n_states = self.env.observation_space.n
+        self.n_actions = self.env.action_space.n
 
         # placeholders
         self.V = np.zeros(self.n_states, dtype=float)
@@ -71,8 +71,6 @@ class ValueIteration(AbstractAgent):
             seed=self.seed,
         )
 
-        # TODO: Call value_iteration() with extracted MDP components
-
     def predict_action(
         self,
         observation: int,
@@ -84,7 +82,8 @@ class ValueIteration(AbstractAgent):
             self.update_agent()
 
         # TODO: Return action from learned policy
-        raise NotImplementedError("predict_action() is not implemented.")
+
+        return self.pi[observation], {}
 
 
 def value_iteration(
@@ -123,12 +122,36 @@ def value_iteration(
         Greedy policy w.r.t. V, with random tie‐breaking.
     """
     n_states, n_actions = R_sa.shape
-    V = np.zeros(n_states, dtype=float)
-    # rng = np.random.default_rng(seed)  uncomment this
-    pi = None
+    V_prev = np.zeros(n_states, dtype=float)
+    V_new = np.zeros(n_states, dtype=float)
 
-    # TODO: update V using the Q values until convergence
+    rng = np.random.default_rng(seed)
 
-    # TODO: Extract the greedy policy from V and update pi
+    i = 1
 
-    return V, pi
+    while True:
+        for s in range(n_states):
+            Q = np.zeros(n_actions)
+            for a in range(n_actions):
+                Q[a] = R_sa[s, a] + gamma * np.sum(T[s, a] * V_prev)
+
+            V_new[s] = np.max(Q)
+
+        if np.max(np.abs(V_new - V_prev)) < epsilon:
+            break
+
+        V_prev = V_new
+        i += 1
+
+    pi = np.zeros(n_states, dtype=int)
+
+    for s in range(n_states):
+        Q = np.zeros(n_actions)
+        for a in range(n_actions):
+            Q[a] = R_sa[s, a] + gamma * np.sum(T[s, a] * V_new)
+
+        best = np.flatnonzero(np.isclose(Q, np.max(Q)))
+        pi[s] = rng.choice(best)
+
+    return V_new, pi
+
